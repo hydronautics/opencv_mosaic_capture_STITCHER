@@ -20,18 +20,21 @@ struct CapturedImage {
 
 	IplImage* img;
 	string windowName;
-	CvPoint point;
+	CvPoint left_point;
+	CvPoint right_point;
 
-	CapturedImage(IplImage* i = NULL, const string& wn = "",CvPoint p = cvPoint(0,0)):
+	CapturedImage(IplImage* i = NULL, const string& wn = "",CvPoint lp = cvPoint(0,0), CvPoint rp = cvPoint(0,0)):
 		img(i == NULL ? NULL : cvCloneImage(i)),
 		windowName(wn),
-		point(p)
+		left_point(lp),
+		right_point(rp)
 	{}
 
 	CapturedImage(const CapturedImage& src):
 		img(cvCloneImage(src.img)),
 		windowName(src.windowName),
-		point(src.point)
+		left_point(src.left_point),
+		right_point(src.right_point)
 	{}
 	~CapturedImage(){ cvReleaseImage(&img); img = NULL;}
 
@@ -41,38 +44,64 @@ vector<CapturedImage> caps;
 // snapshot location is 60x100 centimeters
 const double ROI_ratio = 3.0/5;
 
-void drawTarget(IplImage* img, int x, int y, int radius)
-{
-        cvCircle(img,cvPoint(x, y),radius,CV_RGB(250,0,0),1,8);
-        cvLine(img, cvPoint(x-radius/2, y-radius/2), cvPoint(x+radius/2, y+radius/2),CV_RGB(250,0,0),1,8);
-        cvLine(img, cvPoint(x-radius/2, y+radius/2), cvPoint(x+radius/2, y-radius/2),CV_RGB(250,0,0),1,8);
+typedef enum Target {
+	LEFT_TARGET,
+	RIGHT_TARGET,
+};
+
+void drawTarget(IplImage* img, int x, int y, int radius, Target t){
+
+		CvScalar target_color;
+		switch (t){
+		case LEFT_TARGET:
+			target_color = CV_RGB(255,0,0);
+			break;
+		case RIGHT_TARGET:
+			target_color = CV_RGB(0,0,255);
+			break;
+		default:
+			throw runtime_error("Unexpected target type");
+			return;
+		}
+        cvCircle(img,cvPoint(x, y),radius,target_color,1,8);
+        cvLine(img, cvPoint(x-radius/2, y-radius/2), cvPoint(x+radius/2, y+radius/2),target_color,1,8);
+        cvLine(img, cvPoint(x-radius/2, y+radius/2), cvPoint(x+radius/2, y-radius/2),target_color,1,8);
 }
 
 // обработчик событий от мышки
 void myMouseCallback( int event, int x, int y, int, void* param )
 {
+	static int click_count; // default to 0
 	if (waitingForMouseEvents)
 	{
 		IplImage* img = (IplImage*) param;
+		string window_name;
 
 		switch( event ){
-		case CV_EVENT_MOUSEMOVE:
-			break;
-
 		case CV_EVENT_LBUTTONDOWN:
+			cout << x << " " << y << endl;
+			switch (click_count)
 			{
-				cout << x << " " << y << endl;
-				drawTarget(img, x, y, 10);
-				string window_name;
+			case 0:
+				drawTarget(img, x, y, 10,LEFT_TARGET);
+				break;
+			case 1:
+				drawTarget(img, x, y, 10,RIGHT_TARGET);
+				//string window_name;
 				// windows will be consequently enumerated from A
 				window_name += 'A' + char(caps.size()); 
 				caps.push_back(CapturedImage(img,window_name,cvPoint(x,y)));
+				click_count = 0;
 				waitingForMouseEvents = false;
-			}
-			break;
-
-		case CV_EVENT_LBUTTONUP:
-			break;
+				return;
+			default:
+				throw runtime_error("Unexpected click count");
+				return;
+			}			
+			++click_count;	
+			return;
+		default:
+			return;
 		}
 	}
 }
