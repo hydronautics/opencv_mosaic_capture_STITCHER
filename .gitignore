@@ -6,11 +6,9 @@
 
 *.sln
 
-Debug/
-
-Release/
-
 *.jpg
 ipch/
 *.suo
 *.opensdf
+*.ilk
+*.pdb

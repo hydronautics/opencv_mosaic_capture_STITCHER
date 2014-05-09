@@ -2,6 +2,7 @@
 #include <string>
 #include <iostream>
 #include <vector>
+#include <stdexcept>
 
 using namespace std;
 
@@ -75,13 +76,12 @@ void myMouseCallback( int event, int x, int y, int, void* param )
 }
 
 int main()
-{
+try {
 
 	
 	CvCapture *capture = cvCreateCameraCapture(CV_CAP_ANY);
 	if (!capture){
-		cout << "Can't access any camera." << endl;
-		exit(1);
+		throw runtime_error("Can't access any camera.");
 	}
 
 	double width = cvGetCaptureProperty(capture,CV_CAP_PROP_FRAME_WIDTH);
@@ -107,7 +107,7 @@ int main()
 	for (;;){
 
 		IplImage *frame = cvQueryFrame(capture);
-		
+		if (!frame) throw runtime_error("Failed to query frame");
         cvSetImageROI(frame,frame_ROI);
         // Entire image won't be shown
         // Only ROI will be shown
@@ -139,4 +139,10 @@ int main()
 	cvReleaseCapture(&capture);
 	cvDestroyAllWindows();
 	return 0;
+}
+catch (exception& e){
+	cerr << e.what() << endl;
+	cerr << "Press Enter to quit" << endl;
+	cin.ignore(1);
+	return 1;
 }
