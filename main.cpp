@@ -13,6 +13,9 @@ const string fileEnd = ".jpg";
 const char ESC = 27;
 const char ENTER = 13;
 
+// snapshot location is 60x100 centimeters
+const double ROI_ratio = 3.0/5;
+
 int main()
 {
 
@@ -30,12 +33,22 @@ int main()
 	cout << "width: " << width << endl;
 	cout << "height: " << height << endl;
 
+    int ROI_height = int(height);
+    int ROI_width = int(ROI_ratio*width);
+    int ROI_x_offset = int((width - ROI_width)/ 2.0); // ROI is in the middle
+    int ROI_y_offset = 0;
+
+    CvRect frame_ROI = cvRect(ROI_x_offset,ROI_y_offset,ROI_width,ROI_height);
+
 	cout << "Press Enter for frame capture and Escape for exit" << endl;
 
 	int counter = 0;
 
 	for (;;){
 		IplImage *frame = cvQueryFrame(capture);
+        cvSetImageROI(frame,frame_ROI);
+        // Entire image won't be shown
+        // Only ROI will be shown
         cvShowImage(winName.c_str(),frame);
         int c = cvWaitKey(1);
 		if (c == ESC)
