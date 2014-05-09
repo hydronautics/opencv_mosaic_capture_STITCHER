@@ -1,9 +1,7 @@
-//#include <cv.h>
-//#include <highgui.h>
-//#include <stdlib.h>
 #include <opencv2/opencv.hpp>
 #include <string>
 #include <iostream>
+#include <vector>
 
 using namespace std;
 
@@ -58,6 +56,7 @@ int main()
 		exit(1);
 	}
 
+	vector<IplImage*> captured_images;
 
 	double width = cvGetCaptureProperty(capture,CV_CAP_PROP_FRAME_WIDTH);
 	double height = cvGetCaptureProperty(capture,CV_CAP_PROP_FRAME_HEIGHT);
@@ -76,12 +75,14 @@ int main()
 
 	int counter = 0;
 
+	IplImage *frame_copy = NULL;
+	cvNamedWindow(winName.c_str(),CV_WINDOW_AUTOSIZE);
 	
 
 	for (;;){
 
 		IplImage *frame = cvQueryFrame(capture);
-		cvSetMouseCallback(winName.c_str(),myMouseCallback,(void *) frame);
+		
         cvSetImageROI(frame,frame_ROI);
         // Entire image won't be shown
         // Only ROI will be shown
@@ -91,14 +92,17 @@ int main()
 			break;
 		else if (c == ENTER){
             waitingForMouseEvents = true;
-			
+			frame_copy = cvCloneImage(frame); // memory allocation
+			cvSetMouseCallback(winName.c_str(),myMouseCallback,(void *) frame_copy);
             while (waitingForMouseEvents){
 				cvShowImage(winName.c_str(),frame);
 				cvWaitKey(1);
 			}
             ostringstream ost;
             ost << fileBegin << counter << fileEnd;
-            cvSaveImage(ost.str().c_str(),frame);
+            cvSaveImage(ost.str().c_str(),frame_copy);
+			cvReleaseImage(&frame_copy);
+			frame_copy = NULL;
             cout << "captured: " << ost.str() << endl;
             ++counter;
 		}
