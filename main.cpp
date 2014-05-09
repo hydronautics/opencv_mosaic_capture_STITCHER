@@ -18,25 +18,24 @@ bool volatile waitingForMouseEvents = false;
 
 struct CapturedImage { 
 
-	IplImage* img;
+	cv::Mat img;
 	string windowName;
-	CvPoint left_point;
-	CvPoint right_point;
+	cv::Point left_point;
+	cv::Point right_point;
 
-	CapturedImage(IplImage* i = NULL, const string& wn = "",CvPoint lp = cvPoint(0,0), CvPoint rp = cvPoint(0,0)):
-		img(i == NULL ? NULL : cvCloneImage(i)),
+	CapturedImage(const cv::Mat& i, const string& wn,cv::Point lp, cv::Point rp):
+		img(i.clone()),
 		windowName(wn),
 		left_point(lp),
 		right_point(rp)
 	{}
 
 	CapturedImage(const CapturedImage& src):
-		img(cvCloneImage(src.img)),
+		img(src.img.clone()),
 		windowName(src.windowName),
 		left_point(src.left_point),
 		right_point(src.right_point)
 	{}
-	~CapturedImage(){ cvReleaseImage(&img); img = NULL;}
 
 };
 
@@ -49,9 +48,11 @@ typedef enum Target {
 	RIGHT_TARGET,
 };
 
-void drawTarget(IplImage* img, int x, int y, int radius, Target t){
+void drawTarget(cv::Mat& img, int x, int y, int radius, Target t){
 
-		CvScalar target_color;
+		
+		cv::Scalar target_color;
+
 		switch (t){
 		case LEFT_TARGET:
 			target_color = CV_RGB(255,0,0);
@@ -63,18 +64,18 @@ void drawTarget(IplImage* img, int x, int y, int radius, Target t){
 			throw runtime_error("Unexpected target type");
 			return;
 		}
-        cvCircle(img,cvPoint(x, y),radius,target_color,1,8);
-        cvLine(img, cvPoint(x-radius/2, y-radius/2), cvPoint(x+radius/2, y+radius/2),target_color,1,8);
-        cvLine(img, cvPoint(x-radius/2, y+radius/2), cvPoint(x+radius/2, y-radius/2),target_color,1,8);
+		cv::circle(img,cv::Point(x, y),radius,target_color);
+        cv::line(img, cv::Point(x-radius/2, y-radius/2), cv::Point(x+radius/2, y+radius/2),target_color);
+        cv::line(img, cv::Point(x-radius/2, y+radius/2), cv::Point(x+radius/2, y-radius/2),target_color);
 }
 
 // обработчик событий от мышки
 void myMouseCallback( int event, int x, int y, int, void* param )
 {
 	static int click_count; // default to 0
-	if (waitingForMouseEvents)
-	{
-		IplImage* img = (IplImage*) param;
+	static cv::Point prev_point;
+	if (waitingForMouseEvents){
+		cv::Mat& img = *(cv::Mat*) param;
 		string window_name;
 
 		switch( event ){
@@ -84,13 +85,14 @@ void myMouseCallback( int event, int x, int y, int, void* param )
 			{
 			case 0:
 				drawTarget(img, x, y, 10,LEFT_TARGET);
+				prev_point = cv::Point(x,y);
 				break;
 			case 1:
 				drawTarget(img, x, y, 10,RIGHT_TARGET);
 				//string window_name;
 				// windows will be consequently enumerated from A
 				window_name += 'A' + char(caps.size()); 
-				caps.push_back(CapturedImage(img,window_name,cvPoint(x,y)));
+				caps.push_back(CapturedImage(img,window_name,prev_point,cv::Point(x,y)));
 				click_count = 0;
 				waitingForMouseEvents = false;
 				return;
@@ -115,13 +117,13 @@ try {
 	int cam_index = DEFAULT_CAMERA;
 	cin >> cam_index;
 	cout << "Selected device # " << cam_index << endl;
-	CvCapture *capture = cvCreateCameraCapture(cam_index);
-	if (!capture){
+	cv::VideoCapture capture(cam_index);
+	if (!capture.isOpened()){
 		throw runtime_error("Can't access selected device.");
 	}
 
-	double width = cvGetCaptureProperty(capture,CV_CAP_PROP_FRAME_WIDTH);
-	double height = cvGetCaptureProperty(capture,CV_CAP_PROP_FRAME_HEIGHT);
+	double width = capture.get(CV_CAP_PROP_FRAME_WIDTH);
+	double height = capture.get(CV_CAP_PROP_FRAME_HEIGHT);
 
 	cout << "width: " << width << endl;
 	cout << "height: " << height << endl;
@@ -131,23 +133,25 @@ try {
     int ROI_x_offset = int((width - ROI_width)/ 2.0); // ROI is in the middle
     int ROI_y_offset = 0;
 
-    CvRect frame_ROI = cvRect(ROI_x_offset,ROI_y_offset,ROI_width,ROI_height);
+	cv::Rect frame_ROI(ROI_x_offset,ROI_y_offset,ROI_width,ROI_height);
 
 	cout << "Press Enter for frame capture and Escape for exit" << endl;
 
 	int counter = 0;
 
-	cvNamedWindow(winName.c_str(),CV_WINDOW_AUTOSIZE);
+	cv::namedWindow(winName);
 
 	for (;;){
-
-		IplImage *frame = cvQueryFrame(capture);
-		if (!frame) throw runtime_error("Failed to query frame");
-        cvSetImageROI(frame,frame_ROI);
+		cv::Mat frame;
+		capture >> frame;
+		//if (!capture) throw runtime_error("Failed to query frame");
+		
+        //cvSetImageROI(frame,frame_ROI);
         // Entire image won't be shown
         // Only ROI will be shown
-        cvShowImage(winName.c_str(),frame);
-        int c = cvWaitKey(1);
+		cv::imshow(winName,frame);
+        
+        int c = cv::waitKey(1);
 
 		// now we want our window to be topmost and have the focus
 		// this cannot be done by opencv, we have to use WinAPI
@@ -158,27 +162,26 @@ try {
 			break;
 		else if (c == ENTER){
             waitingForMouseEvents = true;
-			cvSetMouseCallback(winName.c_str(),myMouseCallback,(void *) frame);
+			cv::setMouseCallback(winName,myMouseCallback, (void *) &frame);
             while (waitingForMouseEvents){
-				cvShowImage(winName.c_str(),frame);
-				cvWaitKey(1);
+				cv::imshow(winName,frame);
+				cv::waitKey(1);
 			}
             ostringstream ost;
             ost << fileBegin << counter << fileEnd;
-            cvSaveImage(ost.str().c_str(),frame);
+			cv::imwrite(ost.str(),frame);
 
             cout << "captured: " << ost.str() << endl;
 			for (vector<CapturedImage>::size_type i = 0; i < caps.size(); ++i){
 				CapturedImage& this_img = caps.at(i);
-				cvShowImage(this_img.windowName.c_str(),this_img.img);
+				cv::imshow(this_img.windowName,this_img.img);
 			
 			}
 
             ++counter;
 		}
 	}
-	cvReleaseCapture(&capture);
-	cvDestroyAllWindows();
+
 	return 0;
 }
 catch (exception& e){
