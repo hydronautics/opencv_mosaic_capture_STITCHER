@@ -13,6 +13,28 @@ const char ENTER = 13;
 
 bool volatile waitingForMouseEvents = false;
 
+struct CapturedImage { 
+
+	IplImage* img;
+	string windowName;
+	CvPoint point;
+
+	CapturedImage(IplImage* i = NULL, const string& wn = "",CvPoint p = cvPoint(0,0)):
+		img(i == NULL ? NULL : cvCloneImage(i)),
+		windowName(wn),
+		point(p)
+	{}
+
+	CapturedImage(const CapturedImage& src):
+		img(cvCloneImage(src.img)),
+		windowName(src.windowName),
+		point(src.point)
+	{}
+	~CapturedImage(){ cvReleaseImage(&img); img = NULL;}
+
+};
+
+vector<CapturedImage> caps;
 // snapshot location is 60x100 centimeters
 const double ROI_ratio = 3.0/5;
 
@@ -24,7 +46,7 @@ void drawTarget(IplImage* img, int x, int y, int radius)
 }
 
 // обработчик событий от мышки
-void myMouseCallback( int event, int x, int y, int flags, void* param )
+void myMouseCallback( int event, int x, int y, int, void* param )
 {
 	if (waitingForMouseEvents)
 	{
@@ -35,9 +57,15 @@ void myMouseCallback( int event, int x, int y, int flags, void* param )
 			break;
 
 		case CV_EVENT_LBUTTONDOWN:
-			cout << x << " " << y << endl;
-			drawTarget(img, x, y, 10);
-			waitingForMouseEvents = false;
+			{
+				cout << x << " " << y << endl;
+				drawTarget(img, x, y, 10);
+				string window_name;
+				// windows will be consequently enumerated from A
+				window_name += 'A' + char(caps.size()); 
+				caps.push_back(CapturedImage(img,window_name,cvPoint(x,y)));
+				waitingForMouseEvents = false;
+			}
 			break;
 
 		case CV_EVENT_LBUTTONUP:
@@ -56,8 +84,6 @@ int main()
 		exit(1);
 	}
 
-	vector<IplImage*> captured_images;
-
 	double width = cvGetCaptureProperty(capture,CV_CAP_PROP_FRAME_WIDTH);
 	double height = cvGetCaptureProperty(capture,CV_CAP_PROP_FRAME_HEIGHT);
 
@@ -75,7 +101,6 @@ int main()
 
 	int counter = 0;
 
-	IplImage *frame_copy = NULL;
 	cvNamedWindow(winName.c_str(),CV_WINDOW_AUTOSIZE);
 	
 
@@ -92,18 +117,22 @@ int main()
 			break;
 		else if (c == ENTER){
             waitingForMouseEvents = true;
-			frame_copy = cvCloneImage(frame); // memory allocation
-			cvSetMouseCallback(winName.c_str(),myMouseCallback,(void *) frame_copy);
+			cvSetMouseCallback(winName.c_str(),myMouseCallback,(void *) frame);
             while (waitingForMouseEvents){
 				cvShowImage(winName.c_str(),frame);
 				cvWaitKey(1);
 			}
             ostringstream ost;
             ost << fileBegin << counter << fileEnd;
-            cvSaveImage(ost.str().c_str(),frame_copy);
-			cvReleaseImage(&frame_copy);
-			frame_copy = NULL;
+            cvSaveImage(ost.str().c_str(),frame);
+
             cout << "captured: " << ost.str() << endl;
+			for (vector<CapturedImage>::size_type i = 0; i < caps.size(); ++i){
+				CapturedImage& this_img = caps.at(i);
+				cvShowImage(this_img.windowName.c_str(),this_img.img);
+			
+			}
+
             ++counter;
 		}
 	}
