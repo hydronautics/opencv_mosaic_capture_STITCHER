@@ -3,7 +3,7 @@
 #include <iostream>
 #include <vector>
 #include <stdexcept>
-
+#include <windows.h>
 using namespace std;
 
 const string winName = "camera capture";
@@ -138,7 +138,6 @@ try {
 	int counter = 0;
 
 	cvNamedWindow(winName.c_str(),CV_WINDOW_AUTOSIZE);
-	
 
 	for (;;){
 
@@ -149,6 +148,12 @@ try {
         // Only ROI will be shown
         cvShowImage(winName.c_str(),frame);
         int c = cvWaitKey(1);
+
+		// now we want our window to be topmost and have the focus
+		// this cannot be done by opencv, we have to use WinAPI
+		HWND winhandle = (HWND) cvGetWindowHandle(winName.c_str());
+		SetForegroundWindow(winhandle);
+
 		if (c == ESC)
 			break;
 		else if (c == ENTER){
