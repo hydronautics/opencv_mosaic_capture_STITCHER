@@ -11,6 +11,8 @@ const string fileBegin = "Image";
 const string fileEnd = ".jpg";
 const char ESC = 27;
 const char ENTER = 13;
+const int DEFAULT_CAMERA = 0;
+const int EXTERNAL_CAMERA = 1;
 
 bool volatile waitingForMouseEvents = false;
 
@@ -78,10 +80,15 @@ void myMouseCallback( int event, int x, int y, int, void* param )
 int main()
 try {
 
-	
-	CvCapture *capture = cvCreateCameraCapture(CV_CAP_ANY);
+	cout << "Select a camera for capturing" << endl;
+	cout << DEFAULT_CAMERA << ": Default camera (usually a webcam laptop webcam)" << endl;
+	cout << EXTERNAL_CAMERA << ": Additional camera (usually an externally connected device)" << endl;
+	int cam_index = DEFAULT_CAMERA;
+	cin >> cam_index;
+	cout << "Selected device # " << cam_index << endl;
+	CvCapture *capture = cvCreateCameraCapture(cam_index);
 	if (!capture){
-		throw runtime_error("Can't access any camera.");
+		throw runtime_error("Can't access selected device.");
 	}
 
 	double width = cvGetCaptureProperty(capture,CV_CAP_PROP_FRAME_WIDTH);
