@@ -1,1 +1,16 @@
 /*.user
+
+*.filters
+
+*.sdf
+
+*.sln
+
+Debug/
+
+Release/
+
+*.jpg
+ipch/
+*.suo
+*.opensdf

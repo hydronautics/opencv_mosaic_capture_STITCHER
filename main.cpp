@@ -13,8 +13,40 @@ const string fileEnd = ".jpg";
 const char ESC = 27;
 const char ENTER = 13;
 
+bool volatile waitingForMouseEvents = false;
+
 // snapshot location is 60x100 centimeters
 const double ROI_ratio = 3.0/5;
+
+void drawTarget(IplImage* img, int x, int y, int radius)
+{
+        cvCircle(img,cvPoint(x, y),radius,CV_RGB(250,0,0),1,8);
+        cvLine(img, cvPoint(x-radius/2, y-radius/2), cvPoint(x+radius/2, y+radius/2),CV_RGB(250,0,0),1,8);
+        cvLine(img, cvPoint(x-radius/2, y+radius/2), cvPoint(x+radius/2, y-radius/2),CV_RGB(250,0,0),1,8);
+}
+
+// обработчик событий от мышки
+void myMouseCallback( int event, int x, int y, int flags, void* param )
+{
+	if (waitingForMouseEvents)
+	{
+		IplImage* img = (IplImage*) param;
+
+		switch( event ){
+		case CV_EVENT_MOUSEMOVE:
+			break;
+
+		case CV_EVENT_LBUTTONDOWN:
+			cout << x << " " << y << endl;
+			drawTarget(img, x, y, 10);
+			waitingForMouseEvents = false;
+			break;
+
+		case CV_EVENT_LBUTTONUP:
+			break;
+		}
+	}
+}
 
 int main()
 {
@@ -44,8 +76,12 @@ int main()
 
 	int counter = 0;
 
+	
+
 	for (;;){
+
 		IplImage *frame = cvQueryFrame(capture);
+		cvSetMouseCallback(winName.c_str(),myMouseCallback,(void *) frame);
         cvSetImageROI(frame,frame_ROI);
         // Entire image won't be shown
         // Only ROI will be shown
@@ -54,12 +90,17 @@ int main()
 		if (c == ESC)
 			break;
 		else if (c == ENTER){
-
-			ostringstream ost;
-			ost << fileBegin << counter << fileEnd;
-			cvSaveImage(ost.str().c_str(),frame);
-			cout << "captured: " << ost.str() << endl;
-			++counter;			
+            waitingForMouseEvents = true;
+			
+            while (waitingForMouseEvents){
+				cvShowImage(winName.c_str(),frame);
+				cvWaitKey(1);
+			}
+            ostringstream ost;
+            ost << fileBegin << counter << fileEnd;
+            cvSaveImage(ost.str().c_str(),frame);
+            cout << "captured: " << ost.str() << endl;
+            ++counter;
 		}
 	}
 	cvReleaseCapture(&capture);
