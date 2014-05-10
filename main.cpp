@@ -142,11 +142,12 @@ try {
 	cv::namedWindow(winName);
 
 	for (;;){
-		cv::Mat frame;
-		capture >> frame;
+		cv::Mat original_frame;
+		capture >> original_frame;
 		//if (!capture) throw runtime_error("Failed to query frame");
 		
-        //cvSetImageROI(frame,frame_ROI);
+		// setting ROI for the original frame. All work will be then done on this ROI.
+		cv::Mat frame(original_frame,frame_ROI);
         // Entire image won't be shown
         // Only ROI will be shown
 		cv::imshow(winName,frame);
