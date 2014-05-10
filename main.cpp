@@ -64,7 +64,14 @@ try {
 		cv::Mat frame(original_frame,frame_ROI);
         // Entire image won't be shown
         // Only ROI will be shown
-		cv::imshow(winName,frame);
+
+		cv::Mat shown_frame(frame.clone());
+		cv::Point text_origin(10,60);
+		ostringstream ost;
+		ost << counter;
+		cv::putText(shown_frame,ost.str(),text_origin,cv::FONT_HERSHEY_PLAIN,5,CV_RGB(255,0,0),10);
+
+		cv::imshow(winName,shown_frame);
         int c = cv::waitKey(1);
 
 		// now we want our window to be topmost and have the focus
@@ -79,7 +86,7 @@ try {
 			cout << "Press Enter to confirm capturing or Esc to discard capture and make a new one." << endl;
 			for (;;){
 				bool finished_selecting = false;
-				cv::imshow(winName,frame);
+				cv::imshow(winName,shown_frame);
 				int confirm_capture = cv::waitKey(1);	
 				switch (confirm_capture){
 				case ESC:
