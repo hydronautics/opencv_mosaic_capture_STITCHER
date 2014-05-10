@@ -1,4 +1,5 @@
 #include <opencv2/opencv.hpp>
+#include <opencv2/stitching/stitcher.hpp>
 #include <string>
 #include <iostream>
 #include <vector>
@@ -14,8 +15,12 @@ const char ENTER = 13;
 const int DEFAULT_CAMERA = 0;
 const int EXTERNAL_CAMERA = 1;
 
+const int NUMBER_OF_CAPTURES = 3;
+
 // snapshot location is 60x100 centimeters
 const double ROI_ratio = 3.0/5;
+
+vector<cv::Mat> imgs;
 
 int main()
 try {
@@ -79,8 +84,11 @@ try {
 		HWND winhandle = (HWND) cvGetWindowHandle(winName.c_str());
 		SetForegroundWindow(winhandle);
 
+		bool ready_for_stitching = false;
+
 		switch (c){
 		case ESC:
+			cout << "Vector size is " << imgs.size() << endl;
 			return 0;
 		case ENTER:{
 			cout << "Press Enter to confirm capturing or Esc to discard capture and make a new one." << endl;
@@ -97,10 +105,17 @@ try {
 						ostringstream ost;
 						ost << fileBegin << counter << fileEnd;
 						cv::imwrite(ost.str(),frame);
-
 						cout << "captured: " << ost.str() << endl;
-						++counter;
+						cv::imshow(ost.str(),shown_frame);
+						cv::waitKey(1);
+
 					}
+					imgs.push_back(frame.clone());
+					if (imgs.size() >= NUMBER_OF_CAPTURES){
+						ready_for_stitching = true;
+					}
+
+					++counter;
 
 					finished_selecting = true;
 					break; // break from switch
@@ -114,8 +129,22 @@ try {
 		default:
 			break;
 		}
-
+		if (ready_for_stitching) break;
 	}
+	cv::destroyWindow(winName);
+	cout << "Started stitching of " << imgs.size() << " images..." << endl;
+	cv::Mat pano;
+	cv::Stitcher stitcher = cv::Stitcher::createDefault(true);
+	cv::Stitcher::Status status = stitcher.stitch(imgs, pano);
+
+	if (status != cv::Stitcher::OK)
+	{
+		cerr << "Can't stitch images, error code = " << int(status) << endl;
+		return -1;
+	}
+	
+	cv::imshow("Panorama",pano);
+	cv::waitKey();
 }
 catch (exception& e){
 	cerr << e.what() << endl;
