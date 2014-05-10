@@ -12,10 +12,11 @@ const string fileBegin = "Image";
 const string fileEnd = ".jpg";
 const char ESC = 27;
 const char ENTER = 13;
+const char SPACE = 32;
 const int DEFAULT_CAMERA = 0;
 const int EXTERNAL_CAMERA = 1;
 
-const int NUMBER_OF_CAPTURES = 3;
+const int NUMBER_OF_CAPTURES = 5;
 
 // snapshot location is 60x100 centimeters
 const double ROI_ratio = 3.0/5;
@@ -88,7 +89,6 @@ try {
 
 		switch (c){
 		case ESC:
-			cout << "Vector size is " << imgs.size() << endl;
 			return 0;
 		case ENTER:{
 			cout << "Press Enter to confirm capturing or Esc to discard capture and make a new one." << endl;
@@ -110,13 +110,11 @@ try {
 						cv::waitKey(1);
 
 					}
-					imgs.push_back(frame.clone());
-					if (imgs.size() >= NUMBER_OF_CAPTURES){
-						ready_for_stitching = true;
-					}
-
+					if (imgs.size() < NUMBER_OF_CAPTURES) imgs.push_back(frame.clone());
+					else imgs.at(counter) = frame.clone();
+						
 					++counter;
-
+					if (counter >= NUMBER_OF_CAPTURES) counter = 0;
 					finished_selecting = true;
 					break; // break from switch
 				default:
@@ -126,13 +124,22 @@ try {
 			}
 			}
 			break; // break from outer switch, causes new iteration of outer loop
+		case SPACE:
+			if (imgs.size() == NUMBER_OF_CAPTURES) ready_for_stitching = true;
+			if (imgs.size() > NUMBER_OF_CAPTURES) throw runtime_error("Too many captures in the vector");
+			if (imgs.size() < NUMBER_OF_CAPTURES) cout << "Not enough images was captured" << endl;
+			
+			break;
 		default:
+			if (c >= '0' && c < ('0' + NUMBER_OF_CAPTURES) && (c - '0') < imgs.size())
+				counter = c - '0';
 			break;
 		}
 		if (ready_for_stitching) break;
+			
 	}
 	cv::destroyWindow(winName);
-	cout << "Started stitching of " << imgs.size() << " images..." << endl;
+	cout << "Started stitching of " << NUMBER_OF_CAPTURES << " images..." << endl;
 	cv::Mat pano;
 	cv::Stitcher stitcher = cv::Stitcher::createDefault(true);
 	cv::Stitcher::Status status = stitcher.stitch(imgs, pano);
