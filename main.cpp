@@ -16,7 +16,7 @@ const char SPACE = 32;
 const int DEFAULT_CAMERA = 0;
 const int EXTERNAL_CAMERA = 1;
 
-const int NUMBER_OF_CAPTURES = 5;
+const int NUMBER_OF_CAPTURES = 2;
 
 // snapshot location is 60x100 centimeters
 const double ROI_ratio = 3.0/5;
@@ -135,23 +135,25 @@ try {
 				counter = c - '0';
 			break;
 		}
-		if (ready_for_stitching) break;
+		if (ready_for_stitching) {
+			cv::destroyWindow(winName);
+			cout << "Started stitching of " << NUMBER_OF_CAPTURES << " images..." << endl;
+			cv::Mat pano;
+			cv::Stitcher stitcher = cv::Stitcher::createDefault(true);
+			cv::Stitcher::Status status = stitcher.stitch(imgs, pano);
+
+			if (status != cv::Stitcher::OK) cerr << "Can't stitch images, error code = " << int(status) << endl;
+			else {
+				
+				if (pano.total() <= 1) cout << "Stitching failed, result is empty or too small" << endl;
+				cout << "Done stitching, press any key to start over or Esc to quit" << endl;
+				cv::imshow("Panorama",pano);
+				if (cv::waitKey() == ESC) break;
+			}
+		}
 			
 	}
-	cv::destroyWindow(winName);
-	cout << "Started stitching of " << NUMBER_OF_CAPTURES << " images..." << endl;
-	cv::Mat pano;
-	cv::Stitcher stitcher = cv::Stitcher::createDefault(true);
-	cv::Stitcher::Status status = stitcher.stitch(imgs, pano);
-
-	if (status != cv::Stitcher::OK)
-	{
-		cerr << "Can't stitch images, error code = " << int(status) << endl;
-		return -1;
-	}
 	
-	cv::imshow("Panorama",pano);
-	cv::waitKey();
 }
 catch (exception& e){
 	cerr << e.what() << endl;
