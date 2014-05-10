@@ -16,7 +16,7 @@ const char SPACE = 32;
 const int DEFAULT_CAMERA = 0;
 const int EXTERNAL_CAMERA = 1;
 
-const int NUMBER_OF_CAPTURES = 2;
+unsigned int NUMBER_OF_CAPTURES = 5;
 
 // snapshot location is 60x100 centimeters
 const double ROI_ratio = 3.0/5;
@@ -38,6 +38,10 @@ try {
 	if (!capture.isOpened()){
 		throw runtime_error("Can't access selected device.");
 	}
+
+	cout << "How many captured images should be stitched?" << endl;
+	cin >> NUMBER_OF_CAPTURES;
+	if (!cin) cout << "Default number of captures set: " << NUMBER_OF_CAPTURES << endl;
 
 	double width = capture.get(CV_CAP_PROP_FRAME_WIDTH);
 	double height = capture.get(CV_CAP_PROP_FRAME_HEIGHT);
