@@ -18,8 +18,9 @@ const int EXTERNAL_CAMERA = 1;
 
 unsigned int NUMBER_OF_CAPTURES = 5;
 
-// snapshot location is 60x100 centimeters
-const double ROI_ratio = 3.0/5;
+
+//The width ratio of the ROI can optionally be changed, for example to 3/5.
+const double default_ROI_ratio = 1.0; // means that with of ROI is equal to full with of the captured frame
 
 vector<cv::Mat> imgs;
 
@@ -42,6 +43,17 @@ try {
 	cout << "How many captured images should be stitched?" << endl;
 	cin >> NUMBER_OF_CAPTURES;
 	if (!cin) cout << "Default number of captures set: " << NUMBER_OF_CAPTURES << endl;
+
+	cout << "Set width ratio of the capture, from 0.1 to 1.0" << endl;
+	double ROI_ratio;
+	cin >> ROI_ratio;
+	if (!cin || ROI_ratio < 0.1 || ROI_ratio > 1.0) {
+		ROI_ratio = default_ROI_ratio;
+		cout << "Bad ratio specified, using default value: ";}
+	else 
+		cout << "Ratio value selected: ";
+
+	cout << ROI_ratio << endl;
 
 	double width = capture.get(CV_CAP_PROP_FRAME_WIDTH);
 	double height = capture.get(CV_CAP_PROP_FRAME_HEIGHT);
