@@ -73,7 +73,7 @@ try {
 
 	cout << "Press Enter for frame capture and Escape for exit" << endl;
 
-	int counter = 0;
+	unsigned int counter = 0;
 
 	cv::namedWindow(winName);
 
@@ -94,7 +94,7 @@ try {
 		cv::putText(shown_frame,ost.str(),text_origin,cv::FONT_HERSHEY_PLAIN,5,CV_RGB(255,0,0),10);
 
 		cv::imshow(winName,shown_frame);
-        int c = cv::waitKey(1);
+        unsigned c = (unsigned) cv::waitKey(1); // we only care about actual buttons on keyboard, not special symbols like EOF or smth...
 
 		// now we want our window to be topmost and have the focus
 		// this cannot be done by opencv, we have to use WinAPI
