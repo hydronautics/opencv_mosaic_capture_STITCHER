@@ -10,6 +10,7 @@ using namespace std;
 const string winName = "camera capture";
 const string fileBegin = "Image";
 const string fileEnd = ".jpg";
+const string outputFile = "panorama.jpg";
 const char ESC = 27;
 const char ENTER = 13;
 const char SPACE = 32;
@@ -164,6 +165,7 @@ try {
 				if (pano.total() <= 1) cout << "Stitching failed, result is empty or too small" << endl;
 				cout << "Done stitching, press any key to start over or Esc to quit" << endl;
 				cv::imshow("Panorama",pano);
+				cv::imwrite(outputFile,pano);
 				if (cv::waitKey() == ESC) break;
 			}
 		}
