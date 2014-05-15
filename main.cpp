@@ -1,4 +1,5 @@
-#include <opencv2/opencv.hpp>
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
 #include <opencv2/stitching/stitcher.hpp>
 #include <string>
 #include <iostream>
@@ -101,6 +102,7 @@ try {
 		// this cannot be done by opencv, we have to use WinAPI
 		HWND winhandle = (HWND) cvGetWindowHandle(winName.c_str());
 		SetForegroundWindow(winhandle);
+		BringWindowToTop(winhandle);
 
 		bool ready_for_stitching = false;
 
@@ -178,4 +180,9 @@ catch (exception& e){
 	cerr << "Press Enter to quit" << endl;
 	cin.ignore(1);
 	return 1;
+}
+catch (...){
+	cerr << "Unknown exception" << endl;
+	cin.ignore(1);
+	return 2;
 }
